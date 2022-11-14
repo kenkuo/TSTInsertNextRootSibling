@@ -1,12 +1,3 @@
-/*
- This is a boilerplate to implement a helper addon for Tree Style Tab
- based on its API.
- https://github.com/piroor/treestyletab/wiki/API-for-other-addons
- license: The MIT License, Copyright (c) 2020 YUKI "Piro" Hiroshi
- original:
-   http://github.com/piroor/treestyletab/blob/trunk/doc/boilerplate-helper-background.js
-*/
-
 'use strict';
 
 const TST_ID = 'treestyletab@piro.sakura.ne.jp';
@@ -17,40 +8,19 @@ async function registerToTST() {
     const result = await browser.runtime.sendMessage(TST_ID, {
       type: 'register-self',
 
-      // Basic information of your addon.
-      name: browser.i18n.getMessage('TST insert as next sibling'),
+      name: browser.i18n.getMessage('TST insert new tab as next sibling'),
       icons: browser.runtime.getManifest().icons,
 
-      // The list of listening message types. (optional)
-      // Available message types are listed at:
-      // https://github.com/piroor/treestyletab/wiki/API-for-other-addons#notified-message-types
       listeningTypes: [
         'wait-for-shutdown',
-        'try-handle-newtab',
-        'tab-clicked',
-        'new-tab-processed' // This is required to trigger teardown process for this addon on TST side.
+        'new-tab-processed' 
         // ...
       ],
 
-      // Extra style rules applied in the sidebar. (optional)
-      style: `
-      `,
-
-      // Extra permissions to receive tab information via TST's API. (optional)
-      // Available permissions are listed at:
-      // https://github.com/piroor/treestyletab/wiki/API-for-other-addons#extra-permissions
       permissions: [
         'tabs'
       ],
 
-      /*
-      // Subpanel (optional)
-      // https://github.com/piroor/treestyletab/wiki/SubPanel-API
-      subPanel: {
-        title: browser.i18n.getMessage('extensionName'),
-        url:   `moz-extension://${location.host}/path/to/panel.html`
-      },
-      */
     });
     console.log("registered to TST")
   }
@@ -88,6 +58,13 @@ async function getTab(id) {
 
 waitForTSTShutdown().then(uninitFeaturesForTST);
 
+// Keep track of the previously active tab before new tab activates
+browser.tabs.onActivated.addListener(handleActivated);
+function handleActivated(activeInfo) {
+  oldTabId = activeInfo.previousTabId
+}
+
+// On new tab, find the next sibling of the root tab of the active tab. Then move the tab before this tab
 browser.runtime.onMessageExternal.addListener(async (message, sender) => {
   switch (sender.id) {
     case TST_ID:
@@ -119,14 +96,8 @@ browser.runtime.onMessageExternal.addListener(async (message, sender) => {
             return;
           }
           return;
-          break;
       }
       break;
   }
 });
 
-
-browser.tabs.onActivated.addListener(handleActivated);
-function handleActivated(activeInfo) {
-  oldTabId = activeInfo.previousTabId
-}
